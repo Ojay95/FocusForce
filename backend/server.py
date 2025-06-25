@@ -156,7 +156,7 @@ async def get_projects():
     try:
         projects = list(projects_collection.find())
         for project in projects:
-            project["id"] = project.pop("_id")
+            project["id"] = str(project.pop("_id"))
         return projects
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
