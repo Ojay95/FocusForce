@@ -202,28 +202,28 @@ fi
 run_test "Motivational Quote - High Priority" \
     "curl -s -X POST -H \"Content-Type: application/json\" -d '{\"task_title\":\"Complete important presentation\",\"priority\":\"high\",\"context\":\"This is for a major client meeting tomorrow\"}' $BASE_URL/motivational-quote" \
     200 \
-    "echo \$1 | grep -q 'quote'"
+    "grep -q 'quote' <<< \$1"
 
 run_test "Motivational Quote - Medium Priority" \
     "curl -s -X POST -H \"Content-Type: application/json\" -d '{\"task_title\":\"Update project documentation\",\"priority\":\"medium\"}' $BASE_URL/motivational-quote" \
     200 \
-    "echo \$1 | grep -q 'quote'"
+    "grep -q 'quote' <<< \$1"
 
 run_test "Motivational Quote - Low Priority" \
     "curl -s -X POST -H \"Content-Type: application/json\" -d '{\"task_title\":\"Organize digital files\",\"priority\":\"low\"}' $BASE_URL/motivational-quote" \
     200 \
-    "echo \$1 | grep -q 'quote'"
+    "grep -q 'quote' <<< \$1"
 
 # Test Invalid Requests
 run_test "Invalid Task Update" \
     "curl -s -X PUT -H \"Content-Type: application/json\" -d '{\"title\":\"Invalid Task\"}' $BASE_URL/tasks/invalid-id" \
     404 \
-    "echo \$1 | grep -q 'Task not found'"
+    "grep -q 'not found' <<< \$1"
 
 run_test "Invalid Project Update" \
     "curl -s -X PUT -H \"Content-Type: application/json\" -d '{\"name\":\"Invalid Project\"}' $BASE_URL/projects/invalid-id" \
     404 \
-    "echo \$1 | grep -q 'Project not found'"
+    "grep -q 'not found' <<< \$1"
 
 # Print summary
 echo -e "\n${BLUE}📊 Test Summary${NC}"
