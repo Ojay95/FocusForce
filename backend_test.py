@@ -5,8 +5,8 @@ import time
 import uuid
 from datetime import datetime, timedelta
 
-# Base URL from frontend/.env
-BASE_URL = "https://e1-procrastinator-app-85af.onporter.run/api"
+# Use local server URL for testing
+BASE_URL = "http://0.0.0.0:8001/api"
 
 # Test results tracking
 test_results = {
