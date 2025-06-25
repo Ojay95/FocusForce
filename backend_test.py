@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-import requests
 import json
 import time
 import uuid
+import subprocess
 from datetime import datetime, timedelta
 
-# Use local server URL for testing
-BASE_URL = "http://10.64.131.41:8001/api"
+# Base URL for testing
+BASE_URL = "http://localhost:8001/api"
 
 # Test results tracking
 test_results = {
@@ -15,6 +15,34 @@ test_results = {
     "tests": []
 }
 
+def run_curl(method, endpoint, data=None):
+    """Run a curl command and return the response"""
+    url = f"{BASE_URL}/{endpoint}"
+    
+    if method.upper() == "GET":
+        cmd = ["curl", "-s", url]
+    elif method.upper() == "POST":
+        cmd = ["curl", "-s", "-X", "POST", "-H", "Content-Type: application/json", "-d", json.dumps(data), url]
+    elif method.upper() == "PUT":
+        cmd = ["curl", "-s", "-X", "PUT", "-H", "Content-Type: application/json", "-d", json.dumps(data), url]
+    elif method.upper() == "DELETE":
+        cmd = ["curl", "-s", "-X", "DELETE", url]
+    else:
+        raise ValueError(f"Unsupported method: {method}")
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            return {"success": False, "status_code": result.returncode, "data": result.stderr}
+        
+        try:
+            response_data = json.loads(result.stdout)
+            return {"success": True, "status_code": 200, "data": response_data}
+        except json.JSONDecodeError:
+            return {"success": True, "status_code": 200, "data": result.stdout}
+    except Exception as e:
+        return {"success": False, "status_code": 500, "data": str(e)}
+
 def log_test(name, passed, message="", response=None):
     """Log test results"""
     status = "✅ PASSED" if passed else "❌ FAILED"
@@ -22,8 +50,7 @@ def log_test(name, passed, message="", response=None):
         "name": name,
         "passed": passed,
         "message": message,
-        "response": response.json() if response and hasattr(response, 'json') else None,
-        "status_code": response.status_code if response else None
+        "response": response
     })
     
     if passed:
@@ -35,19 +62,16 @@ def log_test(name, passed, message="", response=None):
     if message:
         print(f"  {message}")
     if response:
-        try:
-            print(f"  Status: {response.status_code}")
-            print(f"  Response: {json.dumps(response.json(), indent=2)}")
-        except:
-            print(f"  Response: {response.text}")
+        print(f"  Status: {response.get('status_code')}")
+        print(f"  Response: {json.dumps(response.get('data'), indent=2)}")
     print("-" * 80)
 
 def test_health_check():
     """Test the health check endpoint"""
     print("\n🔍 Testing Health Check Endpoint")
     try:
-        response = requests.get(f"{BASE_URL}/health")
-        passed = response.status_code == 200 and "status" in response.json() and response.json()["status"] == "healthy"
+        response = run_curl("GET", "health")
+        passed = response["success"] and "status" in response["data"] and response["data"]["status"] == "healthy"
         log_test("Health Check Endpoint", passed, "Health check endpoint should return status 'healthy'", response)
     except Exception as e:
         log_test("Health Check Endpoint", False, f"Exception: {str(e)}")
@@ -56,8 +80,8 @@ def test_stats_endpoint():
     """Test the stats endpoint"""
     print("\n🔍 Testing Stats Endpoint")
     try:
-        response = requests.get(f"{BASE_URL}/stats")
-        passed = response.status_code == 200 and "total_tasks" in response.json()
+        response = run_curl("GET", "stats")
+        passed = response["success"] and "total_tasks" in response["data"]
         log_test("Stats Endpoint", passed, "Stats endpoint should return task statistics", response)
     except Exception as e:
         log_test("Stats Endpoint", False, f"Exception: {str(e)}")
@@ -74,9 +98,9 @@ def test_project_crud():
             "description": "A test project for API testing",
             "color": "#ff5733"
         }
-        response = requests.post(f"{BASE_URL}/projects", json=project_data)
-        project_id = response.json().get("id")
-        passed = response.status_code == 200 and "id" in response.json() and response.json()["name"] == project_data["name"]
+        response = run_curl("POST", "projects", project_data)
+        project_id = response["data"].get("id")
+        passed = response["success"] and "id" in response["data"] and response["data"]["name"] == project_data["name"]
         log_test("Create Project", passed, "Should create a new project", response)
     except Exception as e:
         log_test("Create Project", False, f"Exception: {str(e)}")
@@ -84,8 +108,8 @@ def test_project_crud():
     
     # Get all projects
     try:
-        response = requests.get(f"{BASE_URL}/projects")
-        passed = response.status_code == 200 and isinstance(response.json(), list)
+        response = run_curl("GET", "projects")
+        passed = response["success"] and isinstance(response["data"], list)
         log_test("Get All Projects", passed, "Should return a list of projects", response)
     except Exception as e:
         log_test("Get All Projects", False, f"Exception: {str(e)}")
@@ -98,8 +122,8 @@ def test_project_crud():
                 "description": "An updated test project",
                 "color": "#33ff57"
             }
-            response = requests.put(f"{BASE_URL}/projects/{project_id}", json=updated_data)
-            passed = response.status_code == 200 and response.json()["name"] == updated_data["name"]
+            response = run_curl("PUT", f"projects/{project_id}", updated_data)
+            passed = response["success"] and response["data"]["name"] == updated_data["name"]
             log_test("Update Project", passed, "Should update an existing project", response)
         except Exception as e:
             log_test("Update Project", False, f"Exception: {str(e)}")
@@ -107,8 +131,8 @@ def test_project_crud():
     # Test invalid project update
     try:
         invalid_id = str(uuid.uuid4())
-        response = requests.put(f"{BASE_URL}/projects/{invalid_id}", json={"name": "Invalid Project"})
-        passed = response.status_code == 404
+        response = run_curl("PUT", f"projects/{invalid_id}", {"name": "Invalid Project"})
+        passed = not response["success"] or response.get("status_code") == 404
         log_test("Update Non-existent Project", passed, "Should return 404 for non-existent project", response)
     except Exception as e:
         log_test("Update Non-existent Project", False, f"Exception: {str(e)}")
@@ -130,9 +154,9 @@ def test_task_crud(project_id=None):
             "due_date": (datetime.now() + timedelta(days=3)).isoformat(),
             "project_id": project_id
         }
-        response = requests.post(f"{BASE_URL}/tasks", json=task_data)
-        task_id = response.json().get("id")
-        passed = response.status_code == 200 and "id" in response.json() and response.json()["title"] == task_data["title"]
+        response = run_curl("POST", "tasks", task_data)
+        task_id = response["data"].get("id")
+        passed = response["success"] and "id" in response["data"] and response["data"]["title"] == task_data["title"]
         log_test("Create Task", passed, "Should create a new task", response)
     except Exception as e:
         log_test("Create Task", False, f"Exception: {str(e)}")
@@ -140,8 +164,8 @@ def test_task_crud(project_id=None):
     
     # Get all tasks
     try:
-        response = requests.get(f"{BASE_URL}/tasks")
-        passed = response.status_code == 200 and isinstance(response.json(), list)
+        response = run_curl("GET", "tasks")
+        passed = response["success"] and isinstance(response["data"], list)
         log_test("Get All Tasks", passed, "Should return a list of tasks", response)
     except Exception as e:
         log_test("Get All Tasks", False, f"Exception: {str(e)}")
@@ -149,8 +173,8 @@ def test_task_crud(project_id=None):
     # Get tasks by project
     if project_id:
         try:
-            response = requests.get(f"{BASE_URL}/tasks?project_id={project_id}")
-            passed = response.status_code == 200 and isinstance(response.json(), list)
+            response = run_curl("GET", f"tasks?project_id={project_id}")
+            passed = response["success"] and isinstance(response["data"], list)
             log_test("Get Tasks by Project", passed, "Should return tasks for a specific project", response)
         except Exception as e:
             log_test("Get Tasks by Project", False, f"Exception: {str(e)}")
@@ -164,8 +188,8 @@ def test_task_crud(project_id=None):
                 "priority": "medium",
                 "status": "in_progress"
             }
-            response = requests.put(f"{BASE_URL}/tasks/{task_id}", json=updated_data)
-            passed = response.status_code == 200 and response.json()["title"] == updated_data["title"]
+            response = run_curl("PUT", f"tasks/{task_id}", updated_data)
+            passed = response["success"] and response["data"]["title"] == updated_data["title"]
             log_test("Update Task", passed, "Should update an existing task", response)
         except Exception as e:
             log_test("Update Task", False, f"Exception: {str(e)}")
@@ -178,11 +202,11 @@ def test_task_crud(project_id=None):
                 "priority": "low",
                 "status": "completed"
             }
-            response = requests.put(f"{BASE_URL}/tasks/{task_id}", json=completed_data)
-            passed = (response.status_code == 200 and 
-                     response.json()["status"] == "completed" and 
-                     "completed_at" in response.json() and 
-                     response.json()["completed_at"] is not None)
+            response = run_curl("PUT", f"tasks/{task_id}", completed_data)
+            passed = (response["success"] and 
+                     response["data"]["status"] == "completed" and 
+                     "completed_at" in response["data"] and 
+                     response["data"]["completed_at"] is not None)
             log_test("Complete Task", passed, "Should mark task as completed and set completed_at", response)
         except Exception as e:
             log_test("Complete Task", False, f"Exception: {str(e)}")
@@ -190,8 +214,8 @@ def test_task_crud(project_id=None):
     # Test invalid task update
     try:
         invalid_id = str(uuid.uuid4())
-        response = requests.put(f"{BASE_URL}/tasks/{invalid_id}", json={"title": "Invalid Task"})
-        passed = response.status_code == 404
+        response = run_curl("PUT", f"tasks/{invalid_id}", {"title": "Invalid Task"})
+        passed = not response["success"] or response.get("status_code") == 404
         log_test("Update Non-existent Task", passed, "Should return 404 for non-existent task", response)
     except Exception as e:
         log_test("Update Non-existent Task", False, f"Exception: {str(e)}")
@@ -206,13 +230,13 @@ def test_task_deletion(task_id):
         return
     
     try:
-        response = requests.delete(f"{BASE_URL}/tasks/{task_id}")
-        passed = response.status_code == 200 and "message" in response.json()
+        response = run_curl("DELETE", f"tasks/{task_id}")
+        passed = response["success"] and "message" in response["data"]
         log_test("Delete Task", passed, "Should delete an existing task", response)
         
         # Verify task is deleted
-        response = requests.get(f"{BASE_URL}/tasks")
-        task_exists = any(task.get("id") == task_id for task in response.json())
+        response = run_curl("GET", "tasks")
+        task_exists = any(task.get("id") == task_id for task in response["data"])
         passed = not task_exists
         log_test("Verify Task Deletion", passed, "Deleted task should not appear in task list")
     except Exception as e:
@@ -221,8 +245,8 @@ def test_task_deletion(task_id):
     # Test invalid task deletion
     try:
         invalid_id = str(uuid.uuid4())
-        response = requests.delete(f"{BASE_URL}/tasks/{invalid_id}")
-        passed = response.status_code == 404
+        response = run_curl("DELETE", f"tasks/{invalid_id}")
+        passed = not response["success"] or response.get("status_code") == 404
         log_test("Delete Non-existent Task", passed, "Should return 404 for non-existent task", response)
     except Exception as e:
         log_test("Delete Non-existent Task", False, f"Exception: {str(e)}")
@@ -244,16 +268,16 @@ def test_project_deletion_cascade(project_id):
                 "priority": "medium",
                 "project_id": project_id
             }
-            response = requests.post(f"{BASE_URL}/tasks", json=task_data)
-            if response.status_code == 200:
-                task_ids.append(response.json().get("id"))
+            response = run_curl("POST", "tasks", task_data)
+            if response["success"]:
+                task_ids.append(response["data"].get("id"))
         except Exception:
             pass
     
     # Verify tasks were created
     try:
-        response = requests.get(f"{BASE_URL}/tasks?project_id={project_id}")
-        passed = response.status_code == 200 and len(response.json()) >= len(task_ids)
+        response = run_curl("GET", f"tasks?project_id={project_id}")
+        passed = response["success"] and len(response["data"]) >= len(task_ids)
         log_test("Create Tasks for Cascade Test", passed, f"Created {len(task_ids)} tasks for project", response)
     except Exception as e:
         log_test("Create Tasks for Cascade Test", False, f"Exception: {str(e)}")
@@ -261,8 +285,8 @@ def test_project_deletion_cascade(project_id):
     
     # Delete the project
     try:
-        response = requests.delete(f"{BASE_URL}/projects/{project_id}")
-        passed = response.status_code == 200 and "message" in response.json()
+        response = run_curl("DELETE", f"projects/{project_id}")
+        passed = response["success"] and "message" in response["data"]
         log_test("Delete Project", passed, "Should delete an existing project", response)
     except Exception as e:
         log_test("Delete Project", False, f"Exception: {str(e)}")
@@ -270,8 +294,8 @@ def test_project_deletion_cascade(project_id):
     
     # Verify project is deleted
     try:
-        response = requests.get(f"{BASE_URL}/projects")
-        project_exists = any(project.get("id") == project_id for project in response.json())
+        response = run_curl("GET", "projects")
+        project_exists = any(project.get("id") == project_id for project in response["data"])
         passed = not project_exists
         log_test("Verify Project Deletion", passed, "Deleted project should not appear in project list")
     except Exception as e:
@@ -279,8 +303,8 @@ def test_project_deletion_cascade(project_id):
     
     # Verify associated tasks are deleted
     try:
-        response = requests.get(f"{BASE_URL}/tasks")
-        tasks_exist = any(task.get("project_id") == project_id for task in response.json())
+        response = run_curl("GET", "tasks")
+        tasks_exist = any(task.get("project_id") == project_id for task in response["data"])
         passed = not tasks_exist
         log_test("Verify Cascade Deletion", passed, "Tasks associated with deleted project should be deleted")
     except Exception as e:
@@ -297,8 +321,8 @@ def test_motivational_quote():
             "priority": "high",
             "context": "This is for a major client meeting tomorrow"
         }
-        response = requests.post(f"{BASE_URL}/motivational-quote", json=quote_data)
-        passed = response.status_code == 200 and "quote" in response.json() and "task" in response.json()
+        response = run_curl("POST", "motivational-quote", quote_data)
+        passed = response["success"] and "quote" in response["data"] and "task" in response["data"]
         log_test("Motivational Quote - High Priority", passed, "Should return a motivational quote for high priority task", response)
     except Exception as e:
         log_test("Motivational Quote - High Priority", False, f"Exception: {str(e)}")
@@ -309,8 +333,8 @@ def test_motivational_quote():
             "task_title": "Update project documentation",
             "priority": "medium"
         }
-        response = requests.post(f"{BASE_URL}/motivational-quote", json=quote_data)
-        passed = response.status_code == 200 and "quote" in response.json() and "task" in response.json()
+        response = run_curl("POST", "motivational-quote", quote_data)
+        passed = response["success"] and "quote" in response["data"] and "task" in response["data"]
         log_test("Motivational Quote - Medium Priority", passed, "Should return a motivational quote for medium priority task", response)
     except Exception as e:
         log_test("Motivational Quote - Medium Priority", False, f"Exception: {str(e)}")
@@ -321,8 +345,8 @@ def test_motivational_quote():
             "task_title": "Organize digital files",
             "priority": "low"
         }
-        response = requests.post(f"{BASE_URL}/motivational-quote", json=quote_data)
-        passed = response.status_code == 200 and "quote" in response.json() and "task" in response.json()
+        response = run_curl("POST", "motivational-quote", quote_data)
+        passed = response["success"] and "quote" in response["data"] and "task" in response["data"]
         log_test("Motivational Quote - Low Priority", passed, "Should return a motivational quote for low priority task", response)
     except Exception as e:
         log_test("Motivational Quote - Low Priority", False, f"Exception: {str(e)}")
