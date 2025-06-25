@@ -60,13 +60,13 @@ echo "==============================================="
 run_test "Health Check Endpoint" \
     "curl -s $BASE_URL/health" \
     200 \
-    "echo \$1 | grep -q 'healthy'"
+    "grep -q 'healthy' <<< \$1"
 
 # Test Stats Endpoint
 run_test "Stats Endpoint" \
     "curl -s $BASE_URL/stats" \
     200 \
-    "echo \$1 | grep -q 'total_tasks'"
+    "grep -q 'total_tasks' <<< \$1"
 
 # Create a project
 PROJECT_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
