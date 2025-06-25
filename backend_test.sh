@@ -124,37 +124,37 @@ else
         run_test "Get Tasks" \
             "curl -s $BASE_URL/tasks" \
             200 \
-            "echo \$1 | grep -q '$TASK_ID'"
+            "grep -q '$TASK_ID' <<< \$1"
         
         # Test Get Tasks by Project
         run_test "Get Tasks by Project" \
             "curl -s \"$BASE_URL/tasks?project_id=$PROJECT_ID\"" \
             200 \
-            "echo \$1 | grep -q '$TASK_ID'"
+            "grep -q '$TASK_ID' <<< \$1"
         
         # Test Update Task
         run_test "Update Task" \
             "curl -s -X PUT -H \"Content-Type: application/json\" -d '{\"title\":\"Updated Task\",\"description\":\"An updated test task\",\"priority\":\"medium\",\"status\":\"in_progress\"}' $BASE_URL/tasks/$TASK_ID" \
             200 \
-            "echo \$1 | grep -q 'Updated Task'"
+            "grep -q 'Updated Task' <<< \$1"
         
         # Test Complete Task
         run_test "Complete Task" \
             "curl -s -X PUT -H \"Content-Type: application/json\" -d '{\"title\":\"Completed Task\",\"description\":\"A completed test task\",\"priority\":\"low\",\"status\":\"completed\"}' $BASE_URL/tasks/$TASK_ID" \
             200 \
-            "echo \$1 | grep -q 'completed_at'"
+            "grep -q 'completed_at' <<< \$1"
         
         # Test Delete Task
         run_test "Delete Task" \
             "curl -s -X DELETE $BASE_URL/tasks/$TASK_ID" \
             200 \
-            "echo \$1 | grep -q 'deleted successfully'"
+            "grep -q 'deleted successfully' <<< \$1"
         
         # Verify Task Deletion
         run_test "Verify Task Deletion" \
             "curl -s $BASE_URL/tasks" \
             200 \
-            "! echo \$1 | grep -q '$TASK_ID'"
+            "! grep -q '$TASK_ID' <<< \$1"
     fi
     
     # Create tasks for cascade deletion test
