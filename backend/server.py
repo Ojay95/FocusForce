@@ -105,7 +105,7 @@ async def get_tasks(project_id: Optional[str] = None):
         
         tasks = list(tasks_collection.find(filter_query))
         for task in tasks:
-            task["id"] = task.pop("_id")
+            task["id"] = str(task.pop("_id"))
         return tasks
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
