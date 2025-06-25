@@ -36,10 +36,13 @@ def run_curl(method, endpoint, data=None):
             return {"success": False, "status_code": result.returncode, "data": result.stderr}
         
         try:
+            if "Internal Server Error" in result.stdout:
+                return {"success": False, "status_code": 500, "data": "Internal Server Error"}
+            
             response_data = json.loads(result.stdout)
             return {"success": True, "status_code": 200, "data": response_data}
         except json.JSONDecodeError:
-            return {"success": True, "status_code": 200, "data": result.stdout}
+            return {"success": False, "status_code": 500, "data": result.stdout}
     except Exception as e:
         return {"success": False, "status_code": 500, "data": str(e)}
 
