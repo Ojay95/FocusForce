@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Design System Components */
+.stats-card {
+  @apply p-6 rounded-2xl shadow-sm transition-all duration-200;
+}
+
+.stats-card:hover {
+  @apply shadow-lg -translate-y-1;
+}
+
+.stats-card-total {
+  @apply bg-gradient-to-br from-purple-500 to-purple-600;
+}
+
+.stats-card-completed {
+  @apply bg-gradient-to-br from-green-500 to-green-600;
+}
+
+.nav-item {
+  @apply px-4 py-2 rounded-xl font-medium transition-all duration-200;
+}
+
+.nav-item-active {
+  @apply bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md;
+}
+
+.nav-item-inactive {
+  @apply text-gray-600 hover:text-gray-800 hover:bg-gray-50;
+}
+
+/* Custom scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animation for cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Responsive design enhancements */
+@media (max-width: 768px) {
+  .nav-item {
+    @apply px-3 py-2 text-sm;
+  }
+  
+  .stats-card {
+    @apply p-4;
+  }
+}
+
+/* Loading animation */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Gradient text effect */
+.gradient-text {
+  @apply bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent;
+}
+
+/* Enhanced form styling */
+input:focus, select:focus, textarea:focus {
+  @apply ring-2 ring-purple-500 ring-opacity-50 border-purple-500;
+}
+
+/* Better button hover effects */
+button {
+  @apply transition-all duration-200;
+}
+
+button:hover {
+  @apply transform scale-105;
+}
+
+/* Card hover effects */
+.hover-lift:hover {
+  @apply transform -translate-y-2 shadow-xl;
+}
+
+/* Priority badge colors */
+.priority-high {
+  @apply bg-red-100 text-red-800 border-red-200;
+}
+
+.priority-medium {
+  @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+}
+
+.priority-low {
+  @apply bg-green-100 text-green-800 border-green-200;
+}
+
+/* Status indicators */
+.status-todo {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-in-progress {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-completed {
+  @apply bg-green-100 text-green-800;
+}
+
+/* Kanban board styling */
+.kanban-column {
+  @apply min-h-96 bg-gray-50 rounded-2xl p-4;
+}
+
+.kanban-card {
+  @apply bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer;
+}
+
+.kanban-card:hover {
+  @apply transform -translate-y-1;
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Error states */
+.error-message {
+  @apply bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl;
+}
+
+/* Success states */
+.success-message {
+  @apply bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl;
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  .dark-mode {
+    @apply bg-gray-900 text-white;
+  }
+}
