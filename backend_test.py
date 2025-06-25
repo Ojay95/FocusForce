@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta
 
 # Use local server URL for testing
-BASE_URL = "http://localhost:8001/api"
+BASE_URL = "http://127.0.0.1:8001/api"
 
 # Test results tracking
 test_results = {
