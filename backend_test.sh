@@ -91,13 +91,13 @@ else
     run_test "Get Projects" \
         "curl -s $BASE_URL/projects" \
         200 \
-        "echo \$1 | grep -q '$PROJECT_ID'"
+        "grep -q '$PROJECT_ID' <<< \$1"
     
     # Test Update Project
     run_test "Update Project" \
         "curl -s -X PUT -H \"Content-Type: application/json\" -d '{\"name\":\"Updated Project\",\"description\":\"An updated test project\",\"color\":\"#33ff57\"}' $BASE_URL/projects/$PROJECT_ID" \
         200 \
-        "echo \$1 | grep -q 'Updated Project'"
+        "grep -q 'Updated Project' <<< \$1"
     
     # Create a task
     TASK_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
