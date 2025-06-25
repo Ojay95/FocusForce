@@ -183,19 +183,19 @@ else
     run_test "Delete Project with Cascade" \
         "curl -s -X DELETE $BASE_URL/projects/$PROJECT_ID" \
         200 \
-        "echo \$1 | grep -q 'deleted successfully'"
+        "grep -q 'deleted successfully' <<< \$1"
     
     # Verify Project Deletion
     run_test "Verify Project Deletion" \
         "curl -s $BASE_URL/projects" \
         200 \
-        "! echo \$1 | grep -q '$PROJECT_ID'"
+        "! grep -q '$PROJECT_ID' <<< \$1"
     
     # Verify Cascade Deletion
     run_test "Verify Cascade Deletion" \
         "curl -s \"$BASE_URL/tasks?project_id=$PROJECT_ID\"" \
         200 \
-        "echo \$1 | grep -q '\[\]'"
+        "grep -q '\[\]' <<< \$1"
 fi
 
 # Test Motivational Quote
